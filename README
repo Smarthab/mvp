@@ -1,0 +1,62 @@
+The MVP is constituted of the following elements:
+
+1) A data producer, outputing a stream of datagrams to the data processer
+   (in a "pub/sub" pattern)
+   --
+   Detailed operation: the data producer outputs IOT datagrams on a
+   'pub' zeromq socket;
+
+2) A data processor, which has the following functionalities:
+   a) based on external parameters (eth price, criticality of the data) 
+      it decides the frequency of writing to the chain, which induces a
+      data block size
+   b) it serializes these timestamped data blocks to cold storage
+   c) it writes the signed, timestamped hashes of these blocks to the chain
+   --
+   Detailed operation:
+    state: 1) a datagram buffer 2) the current value of external parameters
+      . a first sub-process handles reading data from the producer on a 'sub' zmq
+      socket and appending to the buffer. If the buffer is full, this sub-process 
+      blocks until the buffer becomes empty
+      . a second sub-process waits until the datagram buffer is full, in which
+      case it is serialized to cold storage and its hash is written to the chain
+      . a third sub-process periodically updates the current value of external 
+      parameters and sets the maximal size of the buffer accordingly.
+
+   The cold storage corresponds to some simple database, eg dbm.
+   The external parameters can be read from a file, or perhaps by adding a small
+   json/http notification
+
+3) A data broker, which handles requests for data issued from clients.
+   Detailed operation:
+   the data broker watches some specific event issued by the reader/writer dapp
+   which corresponds to a request by a client to access the data.
+   For the purpose of the mvp, the network address of the client is supposed to
+   be known. The data broker accesses the data from cold storage and sends the 
+   requested data to the client.
+
+4) A private ETH node, with two smart contracts:
+   a) an ERC 20 smart contract handling the HAB token, deployed by "smarthab".
+      The following additional entities possess some HAB ERC20 accounts:
+      the "server", handling the data writing
+      the "client", requesting for data
+   b) a reader/writer dapp which handles reading and writing block hashes
+      to the chain. The dapp is deployed by a third entity called
+      "smarthab": this ensures that "smarthab" sets the price in HAB token
+      of interacting with the dapp.
+
+   So we need three accounts on the private chains: one for the server, one for the
+   client and one for smarthab. 
+
+5) A client node, which has read access to the chain and can issue requests
+   for specific data blocks (using their hashes as key)
+   Detailed operation:
+   The client must call a particular method on the reader/writer dapp to
+   request a particular block of data. The available blocks are publicly
+   visible on the dapp. In order for this method to be called, the
+   client of course needs to spend some ETH (for the miner) but also
+   some HAB token (to "smarthab" and to the "writer").
+
+---
+Concretely, this can all run on the same (Linux) box. This doesn't describe
+the facilities required to connect this to a user interface.
