@@ -127,7 +127,7 @@ end
 
 let main 
     (listen_addr : string)
-    (secret_phrase : string)
+    (secret_phrase_file : string)
     (db_name : string)
     (solidity_file : string)
     (uri : string)
@@ -156,6 +156,12 @@ let main
       Processor.O.bin_writer_t 
       (module Processor)
   in
+  let secret_phrase =
+    let fd = open_in secret_phrase_file in
+    let res = input_line fd in
+    close_in fd;
+    res
+  in
   let module Server = Huxiang.Node.Make((val compiled_processor)) in
   let credentials = Crypto.(key_pair_to_cred (seeded_key_pair secret_phrase)) in
   let () = Lwt_log.add_rule "*" Lwt_log.Info in
@@ -178,7 +184,7 @@ let listen_addr =
   Arg.(required & opt (some string) None & info ["listen"] ~doc)
 
 let secret_phrase =
-  let doc = "Secret phrase for generating public/secret key pair." in
+  let doc = "File containing secret phrase for generating public/secret key pair." in
   Arg.(required & opt (some string) None & info ["secret"] ~doc)
 
 let db_file =

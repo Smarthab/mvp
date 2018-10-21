@@ -46,7 +46,7 @@ let deploy
     Compile.deploy_rpc
       ~uri
       ~account
-      ~gas:deployment_gas
+      ~gas:`Auto
       ~contract:solidity_output
       ~arguments:[]
       ~value:None
