@@ -55,7 +55,7 @@ let deploy
     failwith "deploy: contract could not be deployed"
   else
     let receipt_str = Types.Tx.show_receipt receipt in
-    Printf.printf "deploy: contract deployed; receipt:\n%s\n" receipt_str;
+    Printf.eprintf "deploy: contract deployed; receipt:\n%s\n" receipt_str;
     (solidity_output, receipt)
 
 

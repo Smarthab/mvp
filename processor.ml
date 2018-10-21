@@ -205,10 +205,10 @@ let processor_term =
   Term.(const main $ listen_addr $ secret_phrase $ db_file $ solidity_file $ uri $ account $ contract_addr)
 
 let info =
-  let doc = "Runs a Huxiang node processing data" in
+  let doc = "Runs a node processing data" in
   let man = [
     `S Manpage.s_bugs;
-    `P "Report bugs on https://github.com/igarnier/huxiang" ]
+    `P "Report bugs on https://github.com/SmartHab/mvp" ]
   in
   Term.info "processor" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
 

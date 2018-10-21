@@ -87,10 +87,10 @@ let producer_term =
   Term.(const main $ publish_addr $ secret_phrase)
 
 let info =
-  let doc = "Runs a Huxiang node producing data" in
+  let doc = "Runs a node producing data" in
   let man = [
     `S Manpage.s_bugs;
-    `P "Report bugs on https://github.com/igarnier/huxiang" ]
+    `P "Report bugs on https://github.com/SmartHab/mvp" ]
   in
   Term.info "producer" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
