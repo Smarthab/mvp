@@ -59,7 +59,13 @@ let compiled_producer :> (module NetProcess.S) =
 
 module Server = Huxiang.Node.Make((val compiled_producer))
 
-let main publish_addr secret_phrase =
+let main publish_addr secret_phrase_file =
+  let secret_phrase =
+    let fd = open_in secret_phrase_file in
+    let res = input_line fd in
+    close_in fd;
+    res
+  in
   let credentials = Crypto.(key_pair_to_cred (seeded_key_pair secret_phrase)) in
   let () = Lwt_log.add_rule "*" Lwt_log.Info in
   Lwt_log.default := (Lwt_log.channel
@@ -80,7 +86,7 @@ let publish_addr =
   Arg.(required & opt (some string) None & info ["addr"] ~doc)
 
 let secret_phrase =
-  let doc = "Secret phrase for generating public/secret key pair." in
+  let doc = "File containing secret phrase for generating public/secret key pair." in
   Arg.(required & opt (some string) None & info ["secret"] ~doc)
 
 let producer_term =

@@ -196,7 +196,7 @@ let solidity_file =
   Arg.(required & opt (some string) None & info ["solidity"] ~doc)
 
 let uri =
-  let doc = "uri of Geth node. Defaults to http://localhost:8545" in
+  let doc = "Uri of Geth node. Defaults to http://localhost:8545" in
   Arg.(value & opt string "http://localhost:8545" & info ["uri"] ~doc)
 
 let account =
