@@ -9,7 +9,12 @@ let write_string_to_file filename =
   Pervasives.input_line fd
 
 let main (solidity_file : string) (account : string) (uri : string) (secret : string) =
-  let account = Bitstr.Hex.of_string account in
+  let account =
+    if Bitstr.Hex.is_hex account then
+      Bitstr.Hex.of_string account
+    else
+      failwith @@ "Error: "^account^" is not a correctly formatted Eth address"
+  in
   let passwd  = read_file secret in
   Rpc.Personal.unlock_account ~uri ~account ~passphrase:passwd ~unlock_duration:60;
   let _, receipt = EthLogger.deploy ~filename:solidity_file ~uri ~account in
@@ -44,7 +49,7 @@ let info =
     `S Manpage.s_bugs;
     `P "Report bugs on https://github.com/SmartHab/mvp" ]
   in
-  Term.info "producer" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
+  Term.info "deploy" ~version:"%‌%VERSION%%" ~doc ~exits:Term.default_exits ~man
 
 let main_term =
   Term.(const main $ solidity_file $ account $ uri $ secret_file)
