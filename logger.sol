@@ -22,7 +22,7 @@ contract Logger {
      }
 
      // logs
-     mapping (uint256 => BlockHash) public log;
+     mapping (uint256 => BlockHash) public logmap;
      
      // Public key of the HAB erc20 (TODO)
      // address HAB_erc20;
@@ -34,13 +34,13 @@ contract Logger {
           hash_num = 0;
      }
 
-     function log(string hash, uint256 start, uint256 end) {
+     function log(string hash, uint256 start, uint256 end) public {
           require(start <= end);
 
           // TODO: make writing conditional on some HAB token being transferred
           // from msg.sender to SmartHAB via the HAB_erc20 contract.
           
-          log[hash_num] = BlockHash(msg.sender, hash, start, end);
+          logmap[hash_num] = BlockHash(msg.sender, hash, start, end);
           hash_num++;
           
           emit BlockWritten(hash);

@@ -75,19 +75,24 @@ struct
   module Logger       = EthLogger.Make(LoggerParams)
   
   let write_block string start finish =
-    Rpc.Personal.unlock_account
-      ~account:LoggerParams.account
-      ~uri:LoggerParams.uri
-      ~passphrase:Params.password
-      ~unlock_duration:60;
-    let%lwt events = Logger.log string start finish in
-    let successful =
-      List.exists (function
-          | Contract.ABI.{ event_name = "BlockWritten"; _ } -> true;
-          | _ -> false
-        ) events
+    let%lwt unlock_success =
+      Rpc.Personal.unlock_account
+        ~account:LoggerParams.account
+        ~uri:LoggerParams.uri
+        ~passphrase:Params.password
+        ~unlock_duration:60
     in
-    Lwt.return successful
+    if not unlock_success then
+      Lwt.fail_with "could not unlock account - exiting"
+    else
+      let%lwt events = Logger.log string start finish in
+      let successful =
+        List.exists (function
+            | Contract.ABI.{ event_name = "BlockWritten"; _ } -> true;
+            | _ -> false
+          ) events
+      in
+      Lwt.return successful
     
   let rec process state =
     Process.with_input (fun packet ->
@@ -110,7 +115,8 @@ struct
                (Hex.show key_hex);%lwt
              Process.continue_with state process)
           else
-            Process.stop state
+            (Lwt_log.info_f "failed to write block - aborting";%lwt
+             Process.stop state)
         else
           Process.continue_with state process
       )
@@ -124,6 +130,7 @@ struct
   
 end
 
+(* let _ = Rpc.switch_debug () *)
 
 let main 
     (listen_addr : string)
@@ -141,12 +148,18 @@ let main
     let contract = Bitstr.Hex.of_string contract_addr
   end
   in
+  let secret_phrase =
+    let fd = open_in secret_phrase_file in
+    let res = input_line fd in
+    close_in fd;
+    res
+  in
   let module Params : ParamsS =
   struct
     let db       = open_database db_name
     let max_size = 10
     let logger_params = (module Lprm : EthLogger.Params)
-    let password = EthLogger.input_password Lprm.account
+    let password = secret_phrase
   end
   in
   let module Processor = Make(Params) in
@@ -155,12 +168,6 @@ let main
       (fun _ -> Processor.I.bin_reader_t) 
       Processor.O.bin_writer_t 
       (module Processor)
-  in
-  let secret_phrase =
-    let fd = open_in secret_phrase_file in
-    let res = input_line fd in
-    close_in fd;
-    res
   in
   let module Server = Huxiang.Node.Make((val compiled_processor)) in
   let credentials = Crypto.(key_pair_to_cred (seeded_key_pair secret_phrase)) in

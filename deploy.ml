@@ -20,11 +20,12 @@ let main (solidity_file : string) (account : string) (uri : string) (secret : st
   let _, receipt = EthLogger.deploy ~filename:solidity_file ~uri ~account in
   match receipt.Types.Tx.contract_address with
   | None ->
-    Printf.eprintf "deploy: error, deployment failed"
+    Printf.eprintf "deployment of contract %s failed\n" solidity_file
   | Some addr ->
-    Pervasives.
-    print_string (Bitstr.Hex.show addr)
-
+    let addr = Bitstr.Hex.show addr in
+    Printf.eprintf "deploy: contract %s successfully deployed at address %s\n" solidity_file addr;
+    Printf.printf "%s" addr
+    
 open Cmdliner
 
 let solidity_file =
