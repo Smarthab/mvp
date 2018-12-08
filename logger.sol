@@ -29,12 +29,12 @@ contract Logger {
 
      event BlockWritten(string);
      
-     function Logger() public {
+     constructor() public {
           creator  = msg.sender;
           hash_num = 0;
      }
 
-     function log(string hash, uint256 start, uint256 end) public {
+     function log(string memory hash, uint256 start, uint256 end) public {
           require(start <= end);
 
           // TODO: make writing conditional on some HAB token being transferred
