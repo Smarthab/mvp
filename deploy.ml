@@ -8,23 +8,38 @@ let write_string_to_file filename =
   let fd = open_in filename in
   Pervasives.input_line fd
 
-let main (solidity_file : string) (account : string) (uri : string) (secret : string) =
-  let account =
+let main_lwt (solidity_file : string) (account : string) (uri : string) (secret : string) =
+  let%lwt account =
     if Bitstr.Hex.is_hex account then
-      Bitstr.Hex.of_string account
+      Lwt.return (Bitstr.Hex.of_string account)
     else
-      failwith @@ "Error: "^account^" is not a correctly formatted Eth address"
+      Lwt.fail_with @@ "Error: "^account^" is not a correctly formatted Eth address"
   in
   let passwd  = read_file secret in
-  Rpc.Personal.unlock_account ~uri ~account ~passphrase:passwd ~unlock_duration:60;
-  let _, receipt = EthLogger.deploy ~filename:solidity_file ~uri ~account in
-  match receipt.Types.Tx.contract_address with
-  | None ->
-    Printf.eprintf "deployment of contract %s failed\n" solidity_file
-  | Some addr ->
-    let addr = Bitstr.Hex.show addr in
-    Printf.eprintf "deploy: contract %s successfully deployed at address %s\n" solidity_file addr;
-    Printf.printf "%s" addr
+  let%lwt unlock_success =
+    Rpc.Personal.unlock_account ~uri ~account ~passphrase:passwd ~unlock_duration:60
+  in
+  if not unlock_success then
+    (Lwt_log.debug_f "could not unlock account";%lwt
+     Lwt.return None)
+  else
+    let%lwt _, receipt = EthLogger.deploy ~filename:solidity_file ~uri ~account in
+    match receipt.Types.Tx.contract_address with
+    | None ->
+      Lwt_log.debug_f "deployment of contract %s failed" solidity_file;%lwt
+      Lwt.return None
+    | Some addr ->
+      let addr = Bitstr.Hex.show addr in
+      Lwt_log.debug_f "deploy: contract %s successfully deployed at address %s" solidity_file addr;%lwt
+      Lwt.return (Some addr)
+
+let main solidity_file account uri secret =
+  let result = Lwt_main.run (main_lwt solidity_file account uri secret) in
+  match result with
+  | None -> ()
+  | Some res ->
+    print_string res;
+    flush_all ()
     
 open Cmdliner
 
